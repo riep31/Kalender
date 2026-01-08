@@ -53,7 +53,7 @@ td{
 }
 
 .date{
-  font-size:20px;
+  font-size:50px;
   font-weight:bold;
   float:right;
 }
@@ -211,11 +211,13 @@ const cutiBersama2026 = [
 
 const allEvents=[...hariLibur2026,...cutiBersama2026];
 
-// ===== PASARAN =====
-function pasaran(d){
- const p=['Kliwon','Legi','Pahing','Pon','Wage'];
- const ref=new Date('2026-01-01');
- return p[(1+Math.floor((d-ref)/86400000))%5];
+// ===== PASARAN ===== (DIPERBAIKI: 1 Januari 2026 = Pon)
+function pasaran(y, m, d){
+ const p=['Pon','Wage','Kliwon','Legi','Pahing'];
+ const date = new Date(y, m, d);
+ const ref = new Date(2026, 0, 1); // 1 Jan 2026 = Pon (index 0)
+ const diff = Math.floor((date - ref) / 86400000);
+ return p[diff % 5];
 }
 
 const months=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -245,14 +247,16 @@ function render(m){
  let events=[];
  for(let d=1;d<=days;d++){
   const date=new Date(2026,m,d);
-  const iso=date.toISOString().split("T")[0];
+  // Format ISO tanpa timezone issue
+  const iso = `2026-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const ev=allEvents.filter(e=>e.date===iso);
   if(ev.length) events.push(...ev);
 
   const td=document.createElement("td");
-  if(date.getDay()===0) td.classList.add("sun");
+  // DIPERBAIKI: Deteksi Minggu berdasarkan posisi kolom, bukan getDay()
+  if((start+d)%7===0) td.classList.add("sun");
   td.innerHTML=`<div class="date">${d}</div>
-                <div class="pasaran">${pasaran(date)}</div>`;
+                <div class="pasaran">${pasaran(2026, m, d)}</div>`;
   ev.forEach(e=>td.innerHTML+=`<div class="${e.type}">${e.title}</div>`);
   tr.appendChild(td);
 
