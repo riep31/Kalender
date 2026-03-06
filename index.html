@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Kalender Indonesia 2026</title>
+<title>Kalender Indonesia</title>
 
 <style>
 body{
@@ -47,19 +47,27 @@ td{
   vertical-align:top;
 }
 
+/* Sel hari Minggu */
 .sun{
   background:#fff5f5;
-  color:red;
 }
 
+/* Angka tanggal merah: hari Minggu ATAU hari libur/cuti */
+.sun .date,
+.holiday .date {
+  color: red;
+}
+
+/* Sel hari biasa — angka tetap hitam */
 .date{
-  font-size:50px;
+  font-size:45px;
   font-weight:bold;
   float:right;
+  color: #000;
 }
 
 .pasaran{
-  font-size:12px;
+  font-size:10px;
   margin-top:32px;
 }
 
@@ -103,7 +111,9 @@ td{
 .note-date{
   min-width:110px;
   font-weight:bold;
+  color: red;
 }
+
 /* ===== PRINT STYLES ===== */
 @media print {
 
@@ -211,13 +221,16 @@ const cutiBersama2026 = [
 
 const allEvents=[...hariLibur2026,...cutiBersama2026];
 
-// ===== PASARAN ===== (DIPERBAIKI: 1 Januari 2026 = Pon)
+// Buat Set berisi semua tanggal libur & cuti untuk lookup cepat
+const holidayDates = new Set(allEvents.map(e => e.date));
+
+// ===== PASARAN ===== (1 Januari 2026 = Pon)
 function pasaran(y, m, d){
  const p=['Pon','Wage','Kliwon','Legi','Pahing'];
  const date = new Date(y, m, d);
  const ref = new Date(2026, 0, 1); // 1 Jan 2026 = Pon (index 0)
  const diff = Math.floor((date - ref) / 86400000);
- return p[diff % 5];
+ return p[((diff % 5) + 5) % 5];
 }
 
 const months=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -246,21 +259,25 @@ function render(m){
 
  let events=[];
  for(let d=1;d<=days;d++){
-  const date=new Date(2026,m,d);
-  // Format ISO tanpa timezone issue
   const iso = `2026-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const ev=allEvents.filter(e=>e.date===iso);
   if(ev.length) events.push(...ev);
 
   const td=document.createElement("td");
-  // DIPERBAIKI: Deteksi Minggu berdasarkan posisi kolom, bukan getDay()
-  if((start+d)%7===0) td.classList.add("sun");
+  const isSunday = (start + d) % 7 === 0;
+  const isHoliday = holidayDates.has(iso);
+
+  // Tambah class sun untuk kolom Minggu
+  if(isSunday) td.classList.add("sun");
+  // Tambah class holiday jika ada di data libur/cuti (bukan Minggu agar tidak duplikat)
+  if(isHoliday && !isSunday) td.classList.add("holiday");
+
   td.innerHTML=`<div class="date">${d}</div>
                 <div class="pasaran">${pasaran(2026, m, d)}</div>`;
   ev.forEach(e=>td.innerHTML+=`<div class="${e.type}">${e.title}</div>`);
   tr.appendChild(td);
 
-  if((start+d)%7===0){body.appendChild(tr);tr=document.createElement("tr");}
+  if(isSunday){body.appendChild(tr);tr=document.createElement("tr");}
  }
  body.appendChild(tr);
 
